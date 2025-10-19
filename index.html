@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Молитовний щоденник</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); text-align: center; }
+        h1 { color: #667eea; font-size: 2.5em; margin-bottom: 10px; }
+        .subtitle { color: #666; font-size: 1.1em; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); text-align: center; transition: transform 0.3s ease; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-number { font-size: 2.5em; font-weight: bold; color: #667eea; display: block; }
+        .stat-label { color: #666; margin-top: 5px; font-size: 0.9em; }
+        .main-content { display: grid; grid-template-columns: 300px 1fr; gap: 20px; margin-bottom: 20px; }
+        .sidebar { background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); height: fit-content; }
+        .add-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-bottom: 20px; transition: transform 0.2s; }
+        .add-btn:hover { transform: scale(1.05); }
+        .filters { margin-top: 20px; }
+        .filter-group { margin-bottom: 15px; }
+        .filter-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #667eea; }
+        .filter-group select, .filter-group input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; }
+        .category-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .category-btn { padding: 8px 15px; border: 2px solid #e0e0e0; background: white; border-radius: 20px; cursor: pointer; transition: all 0.3s; font-size: 0.9em; }
+        .category-btn.active { background: #667eea; color: white; border-color: #667eea; }
+        .prayers-container { background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .prayers-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .prayers-header h2 { color: #667eea; }
+        .prayers-list { display: grid; gap: 15px; }
+        .prayer-card { background: white; border: 2px solid #e0e0e0; border-radius: 12px; padding: 20px; transition: all 0.3s; }
+        .prayer-card:hover { box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3); border-color: #667eea; }
+        .prayer-card.answered { border-left: 5px solid #4caf50; background: #f1f8f4; }
+        .prayer-card.active { border-left: 5px solid #2196f3; }
+        .prayer-card.waiting { border-left: 5px solid #ff9800; }
+        .prayer-card.longterm { border-left: 5px solid #9c27b0; }
+        .prayer-title { font-size: 1.3em; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .prayer-category { display: inline-block; padding: 4px 12px; background: #e3f2fd; color: #1976d2; border-radius: 15px; font-size: 0.85em; margin-bottom: 10px; }
+        .prayer-description { color: #666; line-height: 1.6; margin-bottom: 15px; }
+        .prayer-meta { display: flex; gap: 15px; font-size: 0.9em; color: #999; margin-bottom: 15px; }
+        .prayer-actions { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .btn { padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: all 0.3s; }
+        .btn-answer { background: #4caf50; color: white; }
+        .btn-note { background: #2196f3; color: white; }
+        .btn-edit { background: #ff9800; color: white; }
+        .btn-delete { background: #f44336; color: white; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h2 { color: #667eea; }
+        .close-btn { font-size: 2em; cursor: pointer; color: #999; border: none; background: none; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; font-family: inherit; }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .btn-primary { background: #667eea; color: white; padding: 12px 30px; }
+        .btn-secondary { background: #e0e0e0; color: #333; padding: 12px 30px; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+        .empty-state-icon { font-size: 4em; margin-bottom: 20px; }
+        .answered-info { background: #e8f5e9; padding: 15px; border-radius: 10px; margin-top: 10px; border-left: 4px solid #4caf50; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 968px) { .main-content { grid-template-columns: 1fr; } h1 { font-size: 1.8em; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📖 Молитовний щоденник</h1>
+            <p class="subtitle">"Безперестанку моліться" - 1 Солунян 5:17</p>
+        </header>
+        <div class="stats-grid">
+            <div class="stat-card"><span class="stat-number" id="totalPrayers">0</span><div class="stat-label">Всього молитов</div></div>
+            <div class="stat-card"><span class="stat-number" id="activePrayers">0</span><div class="stat-label">Активних</div></div>
+            <div class="stat-card"><span class="stat-number" id="answeredPrayers">0</span><div class="stat-label">Відповідей отримано</div></div>
+            <div class="stat-card"><span class="stat-number" id="answerRate">0%</span><div class="stat-label">Відсоток відповідей</div></div>
+        </div>
+        <div class="main-content">
+            <aside class="sidebar">
+                <button class="add-btn" onclick="app.openAddModal()">+ Нова молитва</button>
+                <div class="filters">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">Фільтри</h3>
+                    <div class="filter-group"><label>Пошук</label><input type="text" id="searchInput" placeholder="Пошук..." oninput="app.filterPrayers()"></div>
+                    <div class="filter-group"><label>Статус</label><select id="statusFilter" onchange="app.filterPrayers()"><option value="all">Усі</option><option value="active">Активні</option><option value="answered">З відповіддю</option><option value="waiting">Очікування</option><option value="longterm">Довгострокові</option></select></div>
+                    <div class="filter-group"><label>Категорія</label><div class="category-filter"><button class="category-btn active" onclick="app.filterByCategory('all')">Усі</button><button class="category-btn" onclick="app.filterByCategory('family')">👨‍👩‍👧‍👦</button><button class="category-btn" onclick="app.filterByCategory('health')">💊</button><button class="category-btn" onclick="app.filterByCategory('work')">💼</button><button class="category-btn" onclick="app.filterByCategory('finance')">💰</button><button class="category-btn" onclick="app.filterByCategory('church')">⛪</button><button class="category-btn" onclick="app.filterByCategory('personal')">🎯</button></div></div>
+                </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                    <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="app.exportData()">📥 Експорт</button>
+                    <button class="btn btn-secondary" style="width: 100%;" onclick="app.openHelp()">❓ Довідка</button>
+                </div>
+            </aside>
+            <main class="prayers-container">
+                <div class="prayers-header"><h2>Мої молитви</h2></div>
+                <div class="prayers-list" id="prayersList"><div class="empty-state"><div class="empty-state-icon">🙏</div><h3>Почніть вести молитовний щоденник</h3><p>Додайте першу молитву!</p></div></div>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal" id="prayerModal">
+        <div class="modal-content">
+            <div class="modal-header"><h2 id="modalTitle">Нова молитва</h2><button class="close-btn" onclick="app.closeModal()">&times;</button></div>
+            <form id="prayerForm" onsubmit="app.savePrayer(event)">
+                <input type="hidden" id="prayerId">
+                <div class="form-group"><label>За кого/що молитеся? *</label><input type="text" id="prayerTitle" required></div>
+                <div class="form-group"><label>Опис</label><textarea id="prayerDescription"></textarea></div>
+                <div class="form-group"><label>Категорія</label><select id="prayerCategory"><option value="family">👨‍👩‍👧‍👦 Сім'я</option><option value="health">💊 Здоров'я</option><option value="work">💼 Робота</option><option value="finance">💰 Фінанси</option><option value="church">⛪ Церква</option><option value="personal">🎯 Особисте</option></select></div>
+                <div class="form-group"><label>Статус</label><select id="prayerStatus"><option value="active">🙏 Активна</option><option value="waiting">⏳ Очікування</option><option value="longterm">📌 Довгострокова</option></select></div>
+                <div class="form-actions"><button type="button" class="btn btn-secondary" onclick="app.closeModal()">Скасувати</button><button type="submit" class="btn btn-primary">Зберегти</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="aiModal">
+        <div class="modal-content">
+            <div class="modal-header"><h2>🤖 ШІ-помічник</h2><button class="close-btn" onclick="app.closeAIModal()">&times;</button></div>
+            <div style="margin-bottom: 20px;">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;"><strong id="aiPrayerTitle"></strong><p id="aiPrayerDesc" style="color: #666; margin-top: 5px;"></p></div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="app.getAIResponse('verses')" style="padding: 15px;">📖 Знайти вірші</button>
+                    <button class="btn btn-primary" onclick="app.getAIResponse('encourage')" style="padding: 15px;">💪 Підбадьорення</button>
+                    <button class="btn btn-primary" onclick="app.getAIResponse('advice')" style="padding: 15px;">💡 Поради</button>
+                </div>
+                <div id="aiResponse" style="display: none;"><div style="background: linear-gradient(135deg, #667eea22 0%, #764ba233 100%); padding: 20px; border-radius: 12px; border-left: 5px solid #667eea;"><div id="aiResponseText" style="line-height: 1.8; white-space: pre-wrap;"></div></div></div>
+                <div id="aiLoading" style="display: none; text-align: center; padding: 40px;"><div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #e0e0e0; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div><p style="margin-top: 15px; color: #666;">Думаю...</p></div>
+            </div>
+            <div style="text-align: center;"><button class="btn btn-secondary" onclick="app.closeAIModal()">Закрити</button></div>
+        </div>
+    </div>
+
+    <div class="modal" id="helpModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header"><h2>❓ Довідка</h2><button class="close-btn" onclick="app.closeHelp()">&times;</button></div>
+            <div style="line-height: 1.8; color: #333;">
+                <div style="background: linear-gradient(135deg, #667eea22 0%, #764ba233 100%); padding: 20px; border-radius: 12px; margin-bottom: 25px; border-left: 5px solid #667eea;"><h3 style="color: #667eea; margin-bottom: 10px;">🙏 Ласкаво просимо!</h3><p style="margin: 0;">Молитовний щоденник - це ваш особистий простір для спілкування з Богом. Тут ви можете записувати свої молитви, відстежувати відповіді і бачити, як Господь діє у вашому житті.</p></div>
+                <div style="margin-bottom: 25px;"><h3 style="color: #667eea; margin-bottom: 15px;">🤖 ШІ-помічник</h3><div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;"><h4 style="color: #2196f3; margin-bottom: 8px;">📖 Знайти вірші</h4><p style="margin: 0;">ШІ підбере релевантні біблійні вірші для вашої молитви.</p></div><div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px;"><h4 style="color: #4caf50; margin-bottom: 8px;">💪 Підбадьорення</h4><p style="margin: 0;">Отримайте персональне підбадьорююче повідомлення, засноване на біблійних принципах.</p></div><div style="background: #f8f9fa; padding: 15px; border-radius: 10px;"><h4 style="color: #ff9800; margin-bottom: 8px;">💡 Поради</h4><p style="margin: 0;">ШІ підкаже, про що ще молитися і які практичні кроки зробити.</p></div></div>
+                <div style="background: linear-gradient(135deg, #667eea22 0%, #764ba233 100%); padding: 20px; border-radius: 12px; border-left: 5px solid #667eea;"><h3 style="color: #667eea; margin-bottom: 15px;">📖 Для натхнення</h3><p style="font-style: italic; margin-bottom: 10px;">"Просіть, і дасться вам; шукайте, і знайдете; стукайте, і відчинять вам"</p><p style="text-align: right; color: #667eea; font-weight: bold;">- Матвій 7:7</p></div>
+            </div>
+            <div style="text-align: center; margin-top: 25px;"><button class="btn btn-primary" onclick="app.closeHelp()">Зрозуміло! 🙏</button></div>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            prayers: [], currentFilter: { status: 'all', category: 'all', search: '' }, editingId: null, currentAIPrayer: null,
+            API_KEY: atob("Z3NrX1NUelQyS1FFQko3MGNDb1hDSllaV0dkeWIzRlk5OHJHN2xvWXUxSmc1SnV0VFZOSzIyVHY="),
+            API_URL: "https://api.groq.com/openai/v1/chat/completions",
+            MODEL_NAME: "meta-llama/llama-4-maverick-17b-128e-instruct",
+            categories: { family: '👨‍👩‍👧‍👦 Сім\'я', health: '💊 Здоров\'я', work: '💼 Робота', finance: '💰 Фінанси', church: '⛪ Церква', personal: '🎯 Особисте' },
+            statuses: { active: '🙏 Активна', answered: '✅ Відповідь', waiting: '⏳ Очікування', longterm: '📌 Довгострокова' },
+            init() { this.loadPrayers(); this.updateStats(); this.renderPrayers(); },
+            loadPrayers() { const saved = localStorage.getItem('prayers'); if (saved) { this.prayers = JSON.parse(saved); } else { this.prayers = [{ id: Date.now(), title: "Здоров'я мами", description: "Прошу Господа про зцілення", category: "health", status: "active", startDate: new Date().toISOString(), answerDate: null, answerNote: "" }]; this.savePrayersToStorage(); } },
+            savePrayersToStorage() { localStorage.setItem('prayers', JSON.stringify(this.prayers)); this.updateStats(); this.renderPrayers(); },
+            updateStats() { const total = this.prayers.length; const active = this.prayers.filter(p => p.status !== 'answered').length; const answered = this.prayers.filter(p => p.status === 'answered').length; const rate = total > 0 ? Math.round((answered / total) * 100) : 0; document.getElementById('totalPrayers').textContent = total; document.getElementById('activePrayers').textContent = active; document.getElementById('answeredPrayers').textContent = answered; document.getElementById('answerRate').textContent = rate + '%'; },
+            renderPrayers() { const container = document.getElementById('prayersList'); const filtered = this.getFilteredPrayers(); if (filtered.length === 0) { container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🙏</div><h3>Немає молитов</h3><p>Додайте нову молитву</p></div>'; return; } container.innerHTML = filtered.map(prayer => { const days = Math.floor((Date.now() - new Date(prayer.startDate)) / 86400000); return `<div class="prayer-card ${prayer.status}"><div class="prayer-title">${prayer.title}</div><span class="prayer-category">${this.categories[prayer.category]}</span>${prayer.description ? `<div class="prayer-description">${prayer.description}</div>` : ''}<div class="prayer-meta"><span>${this.statuses[prayer.status]}</span><span>📅 ${days} днів тому</span></div>${prayer.status === 'answered' && prayer.answerNote ? `<div class="answered-info"><strong>Відповідь отримано! ✨</strong><p>${prayer.answerNote}</p></div>` : ''}<div class="prayer-actions">${prayer.status !== 'answered' ? `<button class="btn btn-answer" onclick="app.markAnswered(${prayer.id})">✨ Відповідь</button>` : ''}<button class="btn btn-note" onclick="app.openAIHelper(${prayer.id})">🤖 Помічник</button><button class="btn btn-edit" onclick="app.editPrayer(${prayer.id})">✏️</button><button class="btn btn-delete" onclick="app.deletePrayer(${prayer.id})">🗑️</button></div></div>`; }).join(''); },
+            getFilteredPrayers() { return this.prayers.filter(p => { const statusMatch = this.currentFilter.status === 'all' || p.status === this.currentFilter.status; const categoryMatch = this.currentFilter.category === 'all' || p.category === this.currentFilter.category; const searchMatch = !this.currentFilter.search || p.title.toLowerCase().includes(this.currentFilter.search.toLowerCase()) || (p.description && p.description.toLowerCase().includes(this.currentFilter.search.toLowerCase())); return statusMatch && categoryMatch && searchMatch; }); },
+            filterPrayers() { this.currentFilter.status = document.getElementById('statusFilter').value; this.currentFilter.search = document.getElementById('searchInput').value; this.renderPrayers(); },
+            filterByCategory(category) { this.currentFilter.category = category; document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active')); event.target.classList.add('active'); this.renderPrayers(); },
+            openAddModal() { this.editingId = null; document.getElementById('modalTitle').textContent = 'Нова молитва'; document.getElementById('prayerForm').reset(); document.getElementById('prayerModal').classList.add('active'); },
+            closeModal() { document.getElementById('prayerModal').classList.remove('active'); },
+            openHelp() { document.getElementById('helpModal').classList.add('active'); },
+            closeHelp() { document.getElementById('helpModal').classList.remove('active'); },
+            savePrayer(e) { e.preventDefault(); const prayer = { id: this.editingId || Date.now(), title: document.getElementById('prayerTitle').value, description: document.getElementById('prayerDescription').value, category: document.getElementById('prayerCategory').value, status: document.getElementById('prayerStatus').value, startDate: this.editingId ? this.prayers.find(p => p.id === this.editingId).startDate : new Date().toISOString(), answerDate: null, answerNote: '' }; if (this.editingId) { const index = this.prayers.findIndex(p => p.id === this.editingId); this.prayers[index] = prayer; } else { this.prayers.unshift(prayer); } this.savePrayersToStorage(); this.closeModal(); },
+            editPrayer(id) { const prayer = this.prayers.find(p => p.id === id); if (!prayer) return; this.editingId = id; document.getElementById('modalTitle').textContent = 'Редагувати'; document.getElementById('prayerTitle').value = prayer.title; document.getElementById('prayerDescription').value = prayer.description; document.getElementById('prayerCategory').value = prayer.category; document.getElementById('prayerStatus').value = prayer.status; document.getElementById('prayerModal').classList.add('active'); },
+            deletePrayer(id) { if (!confirm('Видалити цю молитву?')) return; this.prayers = this.prayers.filter(p => p.id !== id); this.savePrayersToStorage(); },
+            markAnswered(id) { const answer = prompt('Як Бог відповів на молитву?'); if (!answer) return; const prayer = this.prayers.find(p => p.id === id); if (prayer) { prayer.status = 'answered'; prayer.answerDate = new Date().toISOString(); prayer.answerNote = answer; this.savePrayersToStorage(); } },
+            exportData() { const dataStr = JSON.stringify(this.prayers, null, 2); const blob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `prayers_${new Date().toISOString().split('T')[0]}.json`; link.click(); URL.revokeObjectURL(url); },
+            openAIHelper(id) { const prayer = this.prayers.find(p => p.id === id); if (!prayer) return; this.currentAIPrayer = prayer; document.getElementById('aiPrayerTitle').textContent = prayer.title; document.getElementById('aiPrayerDesc').textContent = prayer.description || ''; document.getElementById('aiResponse').style.display = 'none'; document.getElementById('aiModal').classList.add('active'); },
+            closeAIModal() { document.getElementById('aiModal').classList.remove('active'); this.currentAIPrayer = null; },
+            async getAIResponse(type) { if (!this.currentAIPrayer) return; const prayer = this.currentAIPrayer; const days = Math.floor((Date.now() - new Date(prayer.startDate)) / 86400000); document.getElementById('aiResponse').style.display = 'none'; document.getElementById('aiLoading').style.display = 'block'; const prompts = { verses: `Ти - біблійний помічник. Користувач молиться про: "${prayer.title}". ${prayer.description ? `Опис: "${prayer.description}".` : ''}\n\nПідбери 2-3 релевантні біблійні вірші українською мовою (переклад Огієнка або сучасний). Формат:\n📖 [Книга розділ:вірш]\n"Текст вірша"\n\nБудь стислим і точним.`, encourage: `Ти - християнський наставник. Людина молиться ${days} днів про: "${prayer.title}". ${prayer.description ? `Опис: "${prayer.description}".` : ''}\n\nНапиши коротке (3-4 речення) підбадьорююче повідомлення українською мовою на основі біблійних принципів. Підкресли вірність Бога і важливість постійності в молитві. Будь тактовним і теплим.`,                     advice: `Ти - мудрий християнський радник. Людина молиться про: "${prayer.title}". ${prayer.description ? `Опис: "${prayer.description}".` : ''}\n\nДай 2-3 конкретні поради українською мовою:\n1. Про що ще молитися в цій ситуації\n2. Практичні кроки (які доповнюють молитву)\n\nБудь стислим, конкретним і корисним.` }; try { const response = await fetch(this.API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.API_KEY}` }, body: JSON.stringify({ model: this.MODEL_NAME, messages: [{ role: 'system', content: 'Ти - тактовний християнський помічник для молитовного щоденника. Ти поважний, підбадьорюючий і заснований на Біблії. Не даєш богословських порад, не передбачаєш волі Бога, не заміняєш пастора. Відповідай ТІЛЬКИ українською мовою.' }, { role: 'user', content: prompts[type] }], max_tokens: 500, temperature: 0.7 }) }); if (!response.ok) throw new Error(`API error: ${response.status}`); const data = await response.json(); const aiText = data.choices[0].message.content; document.getElementById('aiLoading').style.display = 'none'; document.getElementById('aiResponse').style.display = 'block'; document.getElementById('aiResponseText').textContent = aiText; } catch (error) { console.error('AI Error:', error); document.getElementById('aiLoading').style.display = 'none'; document.getElementById('aiResponse').style.display = 'block'; document.getElementById('aiResponseText').textContent = '❌ Помилка при отриманні відповіді. Спробуйте ще раз.'; } }
+        };
+        window.addEventListener('DOMContentLoaded', () => app.init());
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { app.closeModal(); app.closeHelp(); app.closeAIModal(); } });
+        document.getElementById('prayerModal').addEventListener('click', (e) => { if (e.target.id === 'prayerModal') app.closeModal(); });
+        document.getElementById('helpModal').addEventListener('click', (e) => { if (e.target.id === 'helpModal') app.closeHelp(); });
+        document.getElementById('aiModal').addEventListener('click', (e) => { if (e.target.id === 'aiModal') app.closeAIModal(); });
+    </script>
+</body>
+</html>
